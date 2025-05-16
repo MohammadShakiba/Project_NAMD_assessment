@@ -5,11 +5,11 @@
 #SBATCH --partition=general-compute  --qos=general-compute
 #SBATCH --clusters=ub-hpc
 ##SBATCH --partition=scavenger  --qos=scavenger
-#SBATCH --time=18:00:00
+#SBATCH --time=20:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=24000
+#SBATCH --mem=16000
 ###SBATCH --mail-user=mshakiba@buffalo.edu
 echo "SLURM_JOBID="$SLURM_JOBID
 echo "SLURM_JOB_NODELIST="$SLURM_JOB_NODELIST
@@ -22,6 +22,6 @@ echo "working directory="$SLURM_SUBMIT_DIR
 #module load cp2k/v24/avx512
 #module load libra/devel
 #module load vmd
-python spin_boson_2_states_shxf.py --iter 49 --tshmethod 8 --ntraj 100 --nsteps 2100000 --wpwidth 0.4 
+python spin_boson_2_states.py --iter 0 --tshmethod gfsh --mqcmethod 4 --ntraj 2000 --nsteps 105000 --dt 20.0 --wpwidth 0.005 --ssy True 
 
 
