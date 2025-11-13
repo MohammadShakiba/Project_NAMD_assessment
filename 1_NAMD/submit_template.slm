@@ -1,11 +1,11 @@
 #!/bin/sh -l
-##SBATCH --account=alexeyak
+#SBATCH --account=alexeyak
 ##SBATCH --partition=valhalla  --qos=valhalla
 ##SBATCH --clusters=faculty
 #SBATCH --partition=general-compute  --qos=general-compute
 #SBATCH --clusters=ub-hpc
 ##SBATCH --partition=scavenger  --qos=scavenger
-#SBATCH --time=20:00:00
+#SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
@@ -17,11 +17,6 @@ echo "SLURM_NNODES="$SLURM_NNODES
 echo "SLURMTMPDIR="$SLURMTMPDIR
 echo "working directory="$SLURM_SUBMIT_DIR
 
-# Here load whatever which is needed for running CP2K
-#module use /projects/academic/cyberwksp21/MODULES
-#module load cp2k/v24/avx512
-#module load libra/devel
-#module load vmd
-python spin_boson_2_states.py --iter 0 --tshmethod gfsh --mqcmethod 4 --ntraj 2000 --nsteps 105000 --dt 20.0 --wpwidth 0.005 --ssy True 
+python spin_boson_2_states.py --iter 0 --tshmethod gfsh --mqcmethod 6 --dectime schw1 --ntraj 1000 --nsteps 420000 --dt 5.0 --A 1000000000.0 --istate 1 --rep 1 --elec_int 2 --ssy True  
 
 
