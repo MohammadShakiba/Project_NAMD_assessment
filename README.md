@@ -27,3 +27,6 @@ parser.add_argument('--wpwidth', default=1.0, type=float)
 ```
 
 Since we aim to run multiple runs, we need to submit these files on different compute nodes. `submit_template.slm` is a sample file used to submit a job on UB CCR. The script to submit all jobs are `run_all*.sh` files. The description of different methods to be used are shown in the pythonic file. 
+
+
+The results can be plotted using the `plot_results_no_ssy.ipynb` and `plot_results_with_ssy.ipynb` Jupyter files.
