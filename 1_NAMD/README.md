@@ -81,6 +81,8 @@ python spin_boson_2_states.py \
   --rep 1 \
   --elec_int 2
 
+```
+
 ---
 
 ## Outputs
