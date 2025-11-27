@@ -1,4 +1,4 @@
-# Project_NAMD_assessment
+# Project NAMD assessment
 
 
 This repository contains the files for assessing different mixed-quantum classical methods. 
@@ -30,3 +30,6 @@ Since we aim to run multiple runs, we need to submit these files on different co
 
 
 The results can be plotted using the `plot_results_no_ssy.ipynb` and `plot_results_with_ssy.ipynb` Jupyter files.
+
+
+For more details on how to run these calculations see [this file](1_NAMD/README.md).
