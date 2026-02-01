@@ -80,7 +80,7 @@ python spin_boson_2_states.py \
   --istate 1 \
   --rep 1 \
   --elec_int 2
-
+  --sampling wigner_finite
 ```
 
 ---

@@ -16,6 +16,9 @@ import models
 import libra_py.dynamics.tsh.compute as tsh_dynamics
 import libra_py.dynamics.tsh.plot as tsh_dynamics_plot
 import libra_py.data_savers as data_savers
+
+#from recipes import fssh, fssh2, fssh3, gfsh, ida, sdm, mfsd, shxf, bcsh, sdm_schw1, sdm_schw2, shxf_edc, shxf_schw1, shxf_schw2, mfsd_edc, mfsd_schw2, dish_rev2023_edc, dish_rev2023_schw1, dish_rev2023_schw2
+
 import libra_py.models.GLVC as GLVC
 
 parser = argparse.ArgumentParser()
@@ -26,6 +29,7 @@ parser.add_argument('--rep', default=1, type=int)
 parser.add_argument('--elec_int', default=2, type=int)
 parser.add_argument('--mqcmethod', default=1, type=int)
 parser.add_argument('--tshmethod', default='fssh', type=str)
+parser.add_argument('--sampling', default='wigner_finite', type=str)
 parser.add_argument('--dectime', default='', type=str)
 parser.add_argument('--nsteps', default=100000, type=int)
 parser.add_argument('--dt', default=1.0, type=float)
@@ -66,7 +70,7 @@ dyn_general = { "nsteps":args.nsteps, "ntraj":args.ntraj, "nstates":NSTATES,
                 "mem_output_level":4,
                 #"properties_to_save":[ "timestep", "time","se_pop_adi", "se_pop_dia", "sh_pop_adi", "sh_pop_dia",
                 #                       "ave_decoherence_rates" ],  
-                "properties_to_save":[ "time", "sh_pop_adi", "sh_pop_dia", "se_pop_adi", "se_pop_dia"],
+                "properties_to_save":[ "time", "sh_pop_adi", "sh_pop_dia", "se_pop_adi", "se_pop_dia", "Etot_ave"],
                 "prefix":"", "prefix2":"",
                 "ham_update_method":1, "ham_transform_method":1, "time_overlap_method":1, 
                 "nac_update_method":1, "hvib_update_method":1, "force_method":1, "rep_force":1,
@@ -88,7 +92,8 @@ dyn_general = { "nsteps":args.nsteps, "ntraj":args.ntraj, "nstates":NSTATES,
 #   3: ID-A
 #   4: SHXF -> with external parameters of: wp_width, coherence_threshold, project_out_aux
 #   5: SDM  -> with external parameters of: decoherence_times_type, decoherence_C_param, decoherence_eps_param, schwartz_decoherence_inv_alpha
-#   6: DISH  -> with external parameters of: decoherence_times_type, decoherence_C_param, decoherence_eps_param, schwartz_decoherence_inv_alpha
+#   6: MFSD -> with external parameters of: 
+#   7: 
 mqcmethod = args.mqcmethod
 # The TSH mehod: fssh, fssh2, gfsh
 tshmethod = args.tshmethod
@@ -116,6 +121,9 @@ elif mqcmethod==5:
     if dectime=='edc':
         folder_prefix = 'SDM_EDC'
         dyn_general.update( { "decoherence_times_type":1, "decoherence_C_param": 1.0, "decoherence_eps_param": args.eps } )  # EDC + default params
+    elif dectime=='schw1':
+        folder_prefix = 'SDM_SCHW1'
+        dyn_general.update( { "decoherence_times_type":2, "schwartz_decoherence_inv_alpha":A } ) # Schwartz version 1
     elif dectime=='schw2':
         folder_prefix = 'SDM_SCHW2'
         dyn_general.update( { "decoherence_times_type":3, "schwartz_decoherence_inv_alpha":A } ) # Schwartz version 2
@@ -179,12 +187,24 @@ nucl_params = { "ndof":ndof,
                 "p": [0.0 for i in range(ndof)],
                 "mass":list(model_params["mass"]),
                 "force_constant":[ model_params["mass"][i]*model_params["omega"][0][i]**2 for i in range(_nosc) ],
-                "q_width":[ 1.0/( np.sqrt(model_params["mass"][i] * beta) * model_params["omega"][0][i]) for i in range(_nosc)],
-                #"q_width":[ 1.0/np.sqrt(2*model_params["mass"][i] * model_params["omega"][0][i]) for i in range(_nosc)],
-                "p_width":[ 1.0/( np.sqrt(beta/model_params["mass"][i])) for i in range(_nosc)],
-                #"p_width":[ np.sqrt(model_params["mass"][i] * model_params["omega"][0][i] / 2 ) for i in range(_nosc)],
                 "init_type": 4
               }
+if args.sampling=='boltzmann': 
+    #=========== Boltzmann
+    nucl_params.update({"q_width":[ 1.0/( np.sqrt(model_params["mass"][i] * beta) * model_params["omega"][0][i]) for i in range(_nosc)]})
+    nucl_params.update({"p_width":[ 1.0/( np.sqrt(beta/model_params["mass"][i])) for i in range(_nosc)]})
+elif args.sampling=='wigner0':
+    #=========== Wigner low-temperature limit (Saikat's)
+    nucl_params.update({"q_width":[ 1.0/np.sqrt(model_params["mass"][i] * model_params["omega"][0][i]) for i in range(_nosc)]})
+    nucl_params.update({"p_width":[ np.sqrt( model_params["mass"][i] * model_params["omega"][0][i]  ) for i in range(_nosc)]})
+elif args.sampling=='wigner_finite':
+    #=========== Wigner finite temperature
+    nucl_params.update({"q_width":[ 1.0/(np.sqrt(model_params["mass"][i] * model_params["omega"][0][i] * np.tanh(beta*model_params["omega"][0][i]/2) )) for i in range(_nosc)]})
+    nucl_params.update({"p_width":[ np.sqrt( model_params["mass"][i] * model_params["omega"][0][i] / np.tanh(beta*model_params["omega"][0][i]/2) ) for i in range(_nosc)]})
+else:
+    raise('ERROR in the value of --sampling')
+
+print(nucl_params)
 # Electronic initial conditions - start on the second diabatic state (starting from 0 = ground)
 ##########
 istate = args.istate
@@ -247,7 +267,7 @@ elif mqcmethod==8 or 'gu_franco' in dectime:
 if args.ssy:
     pref = pref + '_SSY'
 
-pref = pref + f'_istate_{args.istate}_rep_{args.rep}_elec_int_{args.elec_int}'
+pref = pref + f'_istate_{args.istate}_rep_{args.rep}_elec_int_{args.elec_int}_{args.sampling}'
 
 dyn_params.update({ "prefix":pref, "prefix2":pref })
 dyn_general.update({ "prefix":pref, "prefix2":pref })
